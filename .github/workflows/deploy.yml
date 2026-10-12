@@ -1,0 +1,47 @@
+name: Deploy Vite site to Pages
+
+on:
+  push:
+    branches: ["main"] # main 브랜치에 코드가 푸시될 때 작동합니다.
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm' # yarn을 사용하신다면 'yarn'으로 변경
+      - name: Install dependencies
+        run: npm ci # yarn을 사용하신다면 'yarn install --frozen-lockfile'로 변경
+      - name: Build
+        run: npm run build # yarn을 사용하신다면 'yarn build'로 변경
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./dist # Vite의 기본 빌드 출력 폴더입니다.
+
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    needs: build
+    runs-on: ubuntu-latest
+    name: Deploy
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
